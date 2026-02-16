@@ -104,6 +104,12 @@ cargo test --test cross_compat
 
 See [`INTEROP_CERTIFICATION.md`](INTEROP_CERTIFICATION.md) for the full certification report.
 
+## Quantum Resilience
+
+CuaimaCrypt's symmetric hybrid design is inherently resilient against known quantum attacks. Shor's algorithm does not apply (symmetric cipher), and Grover's quadratic speedup is mitigated by the massive internal state (thousands of bits across 36+ ShiftCodecs) and non-linear sequential state evolution.
+
+See [`QUANTUM_RESILIENCE.md`](QUANTUM_RESILIENCE.md) for the full technical analysis.
+
 ## Building
 
 ```bash
