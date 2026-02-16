@@ -24,7 +24,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cuaimacrypt = "0.1"
+cuaimacrypt = "1.0"
 ```
 
 ### Encrypt and Decrypt

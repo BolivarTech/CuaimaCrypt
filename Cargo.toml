@@ -1,6 +1,6 @@
 [package]
 name = "cuaimacrypt"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Julian Bolivar <jbolivarg@bolivartech.com>"]
 description = "CuaimaCrypt symmetric hybrid cipher engine — block cipher and stream cipher combined"

@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-15
 **Java version:** BTCrypto v3.1.0 + BTUtils (Java 23, `strictfp`)
-**Rust version:** cuaimacrypt v0.1.0 (Rust 2021 edition)
+**Rust version:** cuaimacrypt v1.0.0 (Rust 2021 edition)
 **Auditor:** Claude Opus 4.6 (Anthropic)
 
 ---
