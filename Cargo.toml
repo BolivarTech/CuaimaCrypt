@@ -1,10 +1,10 @@
 [package]
 name = "cuaimacrypt"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 authors = ["Julian Bolivar <jbolivarg@bolivartech.com>"]
 description = "CuaimaCrypt symmetric hybrid cipher engine — block cipher and stream cipher combined"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/BolivarTech/CuaimaCrypt"
 keywords = ["cryptography", "encryption", "cipher", "cuaimacrypt"]
 categories = ["cryptography"]

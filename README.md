@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/cuaimacrypt.svg)](https://crates.io/crates/cuaimacrypt)
 [![Documentation](https://docs.rs/cuaimacrypt/badge.svg)](https://docs.rs/cuaimacrypt)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+[![License](https://img.shields.io/crates/l/cuaimacrypt.svg)](LICENSE-MIT)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/BolivarTech/CuaimaCrypt/ci.yml?branch=main)](https://github.com/BolivarTech/CuaimaCrypt/actions)
 
 A symmetric hybrid cipher engine combining block cipher and stream cipher techniques, operating on 128-bit blocks. Security is scalable through the addition of processing blocks (RakeCodecs).
@@ -133,4 +133,11 @@ Rust 2021 edition (1.56+).
 
 ## License
 
-[MIT](LICENSE.md) — Julian Bolivar, [BolivarTech](https://www.bolivartech.com)
+Licensed under either of:
+
+- [Apache License, Version 2.0](LICENSE-APACHE)
+- [MIT License](LICENSE-MIT)
+
+at your option.
+
+Copyright (c) 2024 Julian Bolivar, [BolivarTech](https://www.bolivartech.com)
