@@ -1,6 +1,6 @@
 //! CuaimaCrypt symmetric hybrid cipher engine.
 //!
-//! CuaimaCrypt is a proprietary symmetric cipher that combines block cipher
+//! CuaimaCrypt is a symmetric cipher that combines block cipher
 //! and stream cipher techniques, operating on 128-bit blocks (two `i64` values).
 //! Security is scalable through the addition of processing blocks (RakeCodecs).
 //!
