@@ -1,0 +1,21 @@
+[package]
+name = "cuaimacrypt"
+version = "0.1.0"
+edition = "2021"
+authors = ["Julian Bolivar <jbolivarg@bolivartech.com>"]
+description = "CuaimaCrypt symmetric hybrid cipher engine — block cipher and stream cipher combined"
+license = "CC-BY-SA-4.0"
+repository = "https://github.com/BolivarTech/CuaimaCrypt"
+keywords = ["cryptography", "encryption", "cipher", "cuaimacrypt"]
+categories = ["cryptography"]
+readme = "README.md"
+
+[lib]
+name = "cuaimacrypt"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "benchmark"
+harness = false
