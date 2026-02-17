@@ -15,6 +15,7 @@ Byte-for-byte compatible with the original Java implementation in [BTCrypto](htt
 - **Scalable security** — configure 2 to 1,024 RakeCodecs per instance
 - **Stream cipher properties** — encrypting the same plaintext twice yields different ciphertext
 - **Cross-platform interoperability** — certified compatible with Java BTCrypto v3.1.0
+- **Secure memory zeroization** — all cryptographic state is cleared on drop
 - **Zero external dependencies** — self-contained, no runtime deps
 - **Zero `unsafe` code**
 
@@ -24,7 +25,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cuaimacrypt = "1.0"
+cuaimacrypt = "1.2"
 ```
 
 ### Encrypt and Decrypt
@@ -119,10 +120,11 @@ cargo build --release
 ## Testing
 
 ```bash
-cargo test                              # all tests (132 tests)
+cargo test                              # all tests (195 tests)
 cargo test --lib                        # unit tests only
 cargo test --test cross_compat          # cross-compatibility vectors
 cargo test --test interop_certification # full interop certification
+cargo test --test regression_public_api # public API regression tests
 ```
 
 ## Benchmarks
