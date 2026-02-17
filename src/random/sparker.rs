@@ -10,7 +10,7 @@
 /// that are consumed by [`KaosRand`](crate::random::kaos_rand::KaosRand)
 /// during initialization. A valid sparker must provide at least 60
 /// independent double sparks and 1 short spark greater than 0.
-pub(crate) trait Sparker {
+pub trait Sparker {
     /// Returns the next double-precision spark value.
     fn get_double_spark(&mut self) -> f64;
 

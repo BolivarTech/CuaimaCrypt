@@ -7,7 +7,7 @@
 use super::mersenne_twister::MersenneTwisterPlus;
 
 /// Trait for chaotic attractor systems.
-pub(crate) trait Attractor {
+pub trait Attractor {
     /// Sets the initial point for the attractor trajectory.
     fn set_initial_point(&mut self, x: f64, y: f64, z: f64);
 
@@ -31,7 +31,7 @@ pub(crate) trait Attractor {
 ///
 /// The 20 predefined configurations cover a range of chaotic behaviors
 /// with different Gamma (sigma), Theta (rho), Beta, and DeltaT parameters.
-pub(crate) struct LorenzAttractor {
+pub struct LorenzAttractor {
     x: f64,
     y: f64,
     z: f64,
@@ -67,7 +67,7 @@ impl LorenzAttractor {
     ///
     /// # Parameters
     /// - `rng`: Mersenne Twister PRNG for initial point generation.
-    pub(crate) fn new(rng: &mut MersenneTwisterPlus) -> Self {
+    pub fn new(rng: &mut MersenneTwisterPlus) -> Self {
         let mut attractor = LorenzAttractor {
             x: 0.0,
             y: 0.0,
@@ -95,7 +95,7 @@ impl LorenzAttractor {
     }
 
     /// Returns the number of predefined attractor configurations.
-    pub(crate) fn num_attractor_types() -> usize {
+    pub fn num_attractor_types() -> usize {
         20
     }
 
@@ -106,7 +106,7 @@ impl LorenzAttractor {
     ///
     /// # Parameters
     /// - `n`: Configuration index (0..=19).
-    pub(crate) fn set_attractor_type(&mut self, n: usize) {
+    pub fn set_attractor_type(&mut self, n: usize) {
         match n {
             0 => {
                 self.gamma = 6.59;
@@ -262,22 +262,22 @@ impl LorenzAttractor {
     }
 
     /// Returns the Gamma (sigma) parameter.
-    pub(crate) fn gamma(&self) -> f64 {
+    pub fn gamma(&self) -> f64 {
         self.gamma
     }
 
     /// Returns the Theta (rho) parameter.
-    pub(crate) fn theta(&self) -> f64 {
+    pub fn theta(&self) -> f64 {
         self.theta
     }
 
     /// Returns the Beta parameter.
-    pub(crate) fn beta(&self) -> f64 {
+    pub fn beta(&self) -> f64 {
         self.beta
     }
 
     /// Returns the DeltaT (time step) parameter.
-    pub(crate) fn delta_t(&self) -> f64 {
+    pub fn delta_t(&self) -> f64 {
         self.delta_t
     }
 }

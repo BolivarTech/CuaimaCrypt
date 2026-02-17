@@ -12,7 +12,7 @@
 /// the output sequence is deterministic and matches the Java implementation
 /// exactly. This deterministic mode is used by CuaimaCrypt during
 /// password-based key derivation.
-pub(crate) struct MersenneTwisterPlus {
+pub struct MersenneTwisterPlus {
     mt: [i64; 312],
     mti: usize,
     seed: i64,
@@ -21,9 +21,15 @@ pub(crate) struct MersenneTwisterPlus {
     ciclo: i32,
 }
 
+impl Default for MersenneTwisterPlus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MersenneTwisterPlus {
     /// Creates a new PRNG with a seed derived from system time.
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         let seed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis() as i64)
@@ -35,7 +41,7 @@ impl MersenneTwisterPlus {
     ///
     /// # Parameters
     /// - `seed`: The seed value for deterministic output.
-    pub(crate) fn with_seed(seed: i64) -> Self {
+    pub fn with_seed(seed: i64) -> Self {
         let mut mt = MersenneTwisterPlus {
             mt: [0i64; 312],
             mti: 313,
@@ -77,7 +83,7 @@ impl MersenneTwisterPlus {
     }
 
     /// Generates the next 64-bit pseudorandom value.
-    pub(crate) fn next_long(&mut self) -> i64 {
+    pub fn next_long(&mut self) -> i64 {
         const NN: usize = 312;
         const MM: usize = 156;
         const MATRIX_A: u64 = 0xB5026F5AA96619E9;
@@ -120,12 +126,12 @@ impl MersenneTwisterPlus {
     }
 
     /// Generates a 63-bit non-negative pseudorandom value.
-    pub(crate) fn next_long_63(&mut self) -> i64 {
+    pub fn next_long_63(&mut self) -> i64 {
         ((self.next_long() as u64) >> 1) as i64
     }
 
     /// Generates a bounded pseudorandom long in range [0, n).
-    pub(crate) fn next_long_bounded(&mut self, n: i64) -> i64 {
+    pub fn next_long_bounded(&mut self, n: i64) -> i64 {
         if n <= 0 {
             return 0;
         }
@@ -144,14 +150,14 @@ impl MersenneTwisterPlus {
     }
 
     /// Generates a 32-bit pseudorandom integer.
-    pub(crate) fn next_int(&mut self) -> i32 {
+    pub fn next_int(&mut self) -> i32 {
         ((self.next_long() as u64) >> 32) as i32
     }
 
     /// Generates a 31-bit non-negative pseudorandom integer.
     ///
     /// Equivalent to Java's `nextInt31()`: `(int)(nextLong() >>> 33)`.
-    pub(crate) fn next_int_31(&mut self) -> i32 {
+    pub fn next_int_31(&mut self) -> i32 {
         ((self.next_long() as u64) >> 33) as i32
     }
 
@@ -159,7 +165,7 @@ impl MersenneTwisterPlus {
     ///
     /// Uses rejection sampling to ensure uniform distribution.
     /// Matches Java `MersenneTwisterPlus.nextInt(int n)` exactly.
-    pub(crate) fn next_int_bounded(&mut self, n: i32) -> i32 {
+    pub fn next_int_bounded(&mut self, n: i32) -> i32 {
         if n <= 0 {
             return 0;
         }
@@ -177,22 +183,22 @@ impl MersenneTwisterPlus {
     }
 
     /// Generates a pseudorandom double in range [0, 1).
-    pub(crate) fn next_double(&mut self) -> f64 {
+    pub fn next_double(&mut self) -> f64 {
         ((self.next_long() as u64) >> 11) as f64 * (1.0 / 9007199254740991.0)
     }
 
     /// Generates a pseudorandom byte.
-    pub(crate) fn next_byte(&mut self) -> u8 {
+    pub fn next_byte(&mut self) -> u8 {
         ((self.next_long() as u64) >> 56) as u8
     }
 
     /// Generates a pseudorandom short.
-    pub(crate) fn next_short(&mut self) -> i16 {
+    pub fn next_short(&mut self) -> i16 {
         ((self.next_long() as u64) >> 48) as i16
     }
 
     /// Fills a byte slice with pseudorandom values.
-    pub(crate) fn next_bytes(&mut self, bytes: &mut [u8]) {
+    pub fn next_bytes(&mut self, bytes: &mut [u8]) {
         for byte in bytes.iter_mut() {
             *byte = self.next_byte();
         }
@@ -258,7 +264,11 @@ mod tests {
         let mut mt = MersenneTwisterPlus::with_seed(42);
         for _ in 0..1000 {
             let val = mt.next_double();
-            assert!(val >= 0.0 && val < 1.0, "next_double out of range: {}", val);
+            assert!(
+                (0.0..1.0).contains(&val),
+                "next_double out of range: {}",
+                val
+            );
         }
     }
 
@@ -268,7 +278,7 @@ mod tests {
         for _ in 0..1000 {
             let val = mt.next_int_bounded(10);
             assert!(
-                val >= 0 && val < 10,
+                (0..10).contains(&val),
                 "next_int_bounded out of range: {}",
                 val
             );
@@ -281,7 +291,7 @@ mod tests {
         for _ in 0..1000 {
             let val = mt.next_int_bounded(16);
             assert!(
-                val >= 0 && val < 16,
+                (0..16).contains(&val),
                 "bounded power-of-2 out of range: {}",
                 val
             );

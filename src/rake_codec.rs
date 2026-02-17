@@ -64,6 +64,7 @@ impl RakeCodec {
     }
 
     /// Returns the number of ShiftCodecs (always 4).
+    #[allow(dead_code)]
     pub(crate) fn num_shift_codecs(&self) -> usize {
         RAKE_TEETHS
     }

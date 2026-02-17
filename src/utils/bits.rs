@@ -17,7 +17,7 @@ use crate::error::CuaimaCryptError;
 ///
 /// # Errors
 /// Returns [`CuaimaCryptError::ShiftOutOfRange`] if `shift > 8`.
-pub(crate) fn byte_left_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCryptError> {
+pub fn byte_left_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCryptError> {
     let num_bits: u32 = 8;
     if shift > num_bits {
         return Err(CuaimaCryptError::ShiftOutOfRange);
@@ -37,7 +37,7 @@ pub(crate) fn byte_left_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCryp
 ///
 /// # Errors
 /// Returns [`CuaimaCryptError::ShiftOutOfRange`] if `shift > 8`.
-pub(crate) fn byte_right_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCryptError> {
+pub fn byte_right_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCryptError> {
     let num_bits: u32 = 8;
     if shift > num_bits {
         return Err(CuaimaCryptError::ShiftOutOfRange);
@@ -57,7 +57,7 @@ pub(crate) fn byte_right_rotation(value: u8, shift: u32) -> Result<u8, CuaimaCry
 ///
 /// # Errors
 /// Returns [`CuaimaCryptError::ShiftOutOfRange`] if `shift > 64`.
-pub(crate) fn long_left_rotation(value: i64, shift: u32) -> Result<i64, CuaimaCryptError> {
+pub fn long_left_rotation(value: i64, shift: u32) -> Result<i64, CuaimaCryptError> {
     let num_bits: u32 = 64;
     if shift > num_bits {
         return Err(CuaimaCryptError::ShiftOutOfRange);
@@ -80,7 +80,7 @@ pub(crate) fn long_left_rotation(value: i64, shift: u32) -> Result<i64, CuaimaCr
 ///
 /// # Errors
 /// Returns [`CuaimaCryptError::ShiftOutOfRange`] if `shift > 64`.
-pub(crate) fn long_right_rotation(value: i64, shift: u32) -> Result<i64, CuaimaCryptError> {
+pub fn long_right_rotation(value: i64, shift: u32) -> Result<i64, CuaimaCryptError> {
     let num_bits: u32 = 64;
     if shift > num_bits {
         return Err(CuaimaCryptError::ShiftOutOfRange);
@@ -99,7 +99,7 @@ pub(crate) fn long_right_rotation(value: i64, shift: u32) -> Result<i64, CuaimaC
 ///
 /// # Returns
 /// The number of significant bits.
-pub(crate) fn bits_required(num: i64) -> i32 {
+pub fn bits_required(num: i64) -> i32 {
     let mut y = num;
     let mut shifted = num;
     let mut n: i32 = 0;

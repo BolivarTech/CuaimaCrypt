@@ -19,7 +19,7 @@ use crate::error::CuaimaCryptError;
 ///
 /// # Errors
 /// Returns [`CuaimaCryptError::InvalidByteArrayLength`] if `input.len() % 8 != 0`.
-pub(crate) fn byte_to_long(input: &[u8]) -> Result<Vec<i64>, CuaimaCryptError> {
+pub fn byte_to_long(input: &[u8]) -> Result<Vec<i64>, CuaimaCryptError> {
     if !input.len().is_multiple_of(8) {
         return Err(CuaimaCryptError::InvalidByteArrayLength);
     }
@@ -49,7 +49,7 @@ pub(crate) fn byte_to_long(input: &[u8]) -> Result<Vec<i64>, CuaimaCryptError> {
 ///
 /// # Returns
 /// A `Vec<u8>` containing `input.len() * 8` bytes.
-pub(crate) fn long_to_byte(input: &[i64]) -> Vec<u8> {
+pub fn long_to_byte(input: &[i64]) -> Vec<u8> {
     let mut output = Vec::with_capacity(input.len() * 8);
     for &value in input {
         for j in 0..8 {

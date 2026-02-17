@@ -58,9 +58,9 @@ pub mod error;
 
 mod cuaimacrypt;
 pub(crate) mod rake_codec;
-pub(crate) mod random;
+pub mod random;
 pub(crate) mod shift_codec;
-pub(crate) mod utils;
+pub mod utils;
 pub(crate) mod walsh;
 
 pub use cuaimacrypt::CuaimaCrypt;

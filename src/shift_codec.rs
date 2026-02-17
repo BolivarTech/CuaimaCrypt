@@ -39,6 +39,7 @@ pub(crate) struct ShiftCodecArena {
 
 impl ShiftCodecArena {
     /// Creates a new empty arena.
+    #[allow(dead_code)]
     pub(crate) fn new() -> Self {
         ShiftCodecArena { codecs: Vec::new() }
     }
@@ -84,6 +85,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns the number of ShiftCodecs in the arena.
+    #[allow(dead_code)]
     pub(crate) fn len(&self) -> usize {
         self.codecs.len()
     }
@@ -231,11 +233,13 @@ impl ShiftCodecArena {
     }
 
     /// Returns the current shift register state.
+    #[allow(dead_code)]
     pub(crate) fn get_state(&self, id: ShiftCodecId) -> i64 {
         self.codecs[id.0].shift_register
     }
 
     /// Sets the shift register state directly (without changing the seed).
+    #[allow(dead_code)]
     pub(crate) fn set_state(&mut self, id: ShiftCodecId, state: i64) {
         self.codecs[id.0].shift_register = state;
     }
@@ -256,6 +260,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns the upchain bit position.
+    #[allow(dead_code)]
     pub(crate) fn get_pos_up(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].pos_up
     }
@@ -270,6 +275,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns the downchain bit position.
+    #[allow(dead_code)]
     pub(crate) fn get_pos_down(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].pos_down
     }
@@ -284,6 +290,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns the shift leap value.
+    #[allow(dead_code)]
     pub(crate) fn get_shift_leap(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].shift_leap
     }
@@ -296,6 +303,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns window A position.
+    #[allow(dead_code)]
     pub(crate) fn get_win_a(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].win_a
     }
@@ -308,6 +316,7 @@ impl ShiftCodecArena {
     }
 
     /// Returns window B position.
+    #[allow(dead_code)]
     pub(crate) fn get_win_b(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].win_b
     }
@@ -329,11 +338,13 @@ impl ShiftCodecArena {
     }
 
     /// Returns the entrada (last input) value.
+    #[allow(dead_code)]
     pub(crate) fn get_entrada(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].entrada
     }
 
     /// Returns the salida (last output) value.
+    #[allow(dead_code)]
     pub(crate) fn get_salida(&self, id: ShiftCodecId) -> i32 {
         self.codecs[id.0].salida
     }

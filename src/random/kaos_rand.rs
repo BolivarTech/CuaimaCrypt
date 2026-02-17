@@ -31,7 +31,7 @@ const MASK: i64 = 0x7FFFFFFFFFFFFFFF_u64 as i64;
 /// When constructed with a [`Sparker`] (via [`from_sparker`](Self::from_sparker)),
 /// the initial points and jump count are derived deterministically from the
 /// sparker, enabling reproducible sequences for cryptographic key derivation.
-pub(crate) struct KaosRand {
+pub struct KaosRand {
     attractors: Vec<LorenzAttractor>,
     rnd: MersenneTwisterPlus,
     jump: i32,
@@ -46,7 +46,7 @@ impl KaosRand {
     ///
     /// # Parameters
     /// - `sparker`: A Sparker providing deterministic seed values.
-    pub(crate) fn from_sparker(sparker: &mut dyn Sparker) -> Self {
+    pub fn from_sparker(sparker: &mut dyn Sparker) -> Self {
         let rnd = MersenneTwisterPlus::new();
         let mut attractors = Vec::with_capacity(NUM_ATTRACTORS);
 
@@ -90,7 +90,7 @@ impl KaosRand {
     /// 5. XOR-accumulates with 12-bit left shifts.
     ///
     /// Finally masks to 53 bits and normalizes to [0, 1).
-    pub(crate) fn next_double(&mut self) -> f64 {
+    pub fn next_double(&mut self) -> f64 {
         let k = 3; // 3 coordinates per attractor
         let total_coords = k * self.attractors.len();
         let mut coordenada = vec![0.0f64; total_coords];
@@ -138,7 +138,7 @@ impl KaosRand {
     /// Generates a pseudorandom long in range [0, 2^63-1].
     ///
     /// Matches Java: `(long)(Mask * nextDouble())`
-    pub(crate) fn next_long(&mut self) -> i64 {
+    pub fn next_long(&mut self) -> i64 {
         (MASK as f64 * self.next_double()) as i64
     }
 
@@ -156,7 +156,7 @@ impl KaosRand {
     ///
     /// # Parameters
     /// - `n`: The exclusive upper bound (must be positive).
-    pub(crate) fn next_int_bounded(&mut self, n: i32) -> i32 {
+    pub fn next_int_bounded(&mut self, n: i32) -> i32 {
         if n <= 0 {
             return 0;
         }
@@ -200,7 +200,11 @@ mod tests {
         let mut kaos = KaosRand::from_sparker(&mut sparker);
         for _ in 0..100 {
             let val = kaos.next_double();
-            assert!(val >= 0.0 && val < 1.0, "next_double out of range: {}", val);
+            assert!(
+                (0.0..1.0).contains(&val),
+                "next_double out of range: {}",
+                val
+            );
         }
     }
 
@@ -211,7 +215,7 @@ mod tests {
         for _ in 0..100 {
             let val = kaos.next_int_bounded(10);
             assert!(
-                val >= 0 && val < 10,
+                (0..10).contains(&val),
                 "next_int_bounded out of range: {}",
                 val
             );
@@ -225,7 +229,7 @@ mod tests {
         for _ in 0..100 {
             let val = kaos.next_int_bounded(32);
             assert!(
-                val >= 0 && val < 32,
+                (0..32).contains(&val),
                 "bounded power-of-2 out of range: {}",
                 val
             );

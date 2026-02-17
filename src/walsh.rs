@@ -176,12 +176,8 @@ mod tests {
     #[test]
     fn test_walsh_first_half_column1_matches_column0() {
         // For indices 0-63, column 0 and column 1 have the same values
-        for i in 0..64 {
-            assert_eq!(
-                WALSH_CODES[i][0], WALSH_CODES[i][1],
-                "Mismatch at index {} between columns",
-                i
-            );
+        for (i, row) in WALSH_CODES.iter().enumerate().take(64) {
+            assert_eq!(row[0], row[1], "Mismatch at index {} between columns", i);
         }
     }
 
@@ -189,8 +185,8 @@ mod tests {
     fn test_walsh_second_half_column1_differs() {
         // For indices 64-127, column 1 differs from column 0
         let mut any_different = false;
-        for i in 64..128 {
-            if WALSH_CODES[i][0] != WALSH_CODES[i][1] {
+        for row in WALSH_CODES.iter().skip(64) {
+            if row[0] != row[1] {
                 any_different = true;
                 break;
             }

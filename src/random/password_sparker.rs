@@ -58,7 +58,7 @@ const WALSH_CODES: [i64; 128] = [
 ///
 /// Uses Walsh code expansion and powers of pi to derive 40 spark values
 /// from the password bytes (UTF-8 encoded).
-pub(crate) struct PasswordSparker {
+pub struct PasswordSparker {
     sparks: Vec<f64>,
     spark_pos: usize,
     password_ok: i32,
@@ -72,7 +72,7 @@ impl PasswordSparker {
     ///
     /// # Parameters
     /// - `password`: The password string (minimum 1 character).
-    pub(crate) fn new(password: &str) -> Self {
+    pub fn new(password: &str) -> Self {
         let mut sparker = PasswordSparker {
             sparks: vec![0.0; NUM_SPARKS],
             spark_pos: 0,
@@ -86,7 +86,7 @@ impl PasswordSparker {
     ///
     /// - `0`: Password is valid.
     /// - `-1`: Password is too short (less than 1 character).
-    pub(crate) fn password_ok(&self) -> i32 {
+    pub fn password_ok(&self) -> i32 {
         self.password_ok
     }
 
@@ -380,6 +380,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::approx_constant)]
     fn test_round_to_decimals() {
         assert_eq!(PasswordSparker::round_to_decimals(3.14159, 2), 3.14);
         assert_eq!(PasswordSparker::round_to_decimals(2.5, 0), 3.0);
@@ -518,12 +519,12 @@ mod tests {
             9.85481439211500e+01,
         ];
         println!("--- Comparison: sparks[0..5] vs Java double_sparks[0..5] ---");
-        for i in 0..5 {
-            let diff = sparker.sparks[i] - java_double_sparks[i];
+        for (i, &java_val) in java_double_sparks.iter().enumerate() {
+            let diff = sparker.sparks[i] - java_val;
             let match_str = if diff.abs() < 1e-6 { "MATCH" } else { "DIFFER" };
             println!(
                 "  [{}] Rust: {:+.17e}  Java: {:+.17e}  diff: {:+.6e}  {}",
-                i, sparker.sparks[i], java_double_sparks[i], diff, match_str
+                i, sparker.sparks[i], java_val, diff, match_str
             );
         }
         println!();
@@ -541,16 +542,12 @@ mod tests {
         let mut sparker_s = PasswordSparker::new(password);
         let java_short_sparks: [i16; 5] = [16042, 31622, 15156, 23648, 31985];
         println!("--- getShortSpark() outputs [0..5] vs Java ---");
-        for i in 0..5 {
+        for (i, &java_val) in java_short_sparks.iter().enumerate() {
             let val = sparker_s.get_short_spark();
-            let match_str = if val == java_short_sparks[i] {
-                "MATCH"
-            } else {
-                "DIFFER"
-            };
+            let match_str = if val == java_val { "MATCH" } else { "DIFFER" };
             println!(
                 "  getShortSpark()[{}] = {}  Java: {}  {}",
-                i, val, java_short_sparks[i], match_str
+                i, val, java_val, match_str
             );
         }
         println!();

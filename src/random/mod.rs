@@ -3,8 +3,8 @@
 //! Provides the chaotic PRNG infrastructure based on Lorenz attractors
 //! that drives CuaimaCrypt's key derivation function.
 
-pub(crate) mod kaos_rand;
-pub(crate) mod lorenz;
-pub(crate) mod mersenne_twister;
-pub(crate) mod password_sparker;
-pub(crate) mod sparker;
+pub mod kaos_rand;
+pub mod lorenz;
+pub mod mersenne_twister;
+pub mod password_sparker;
+pub mod sparker;
