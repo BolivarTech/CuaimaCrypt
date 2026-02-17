@@ -2,7 +2,7 @@
 name = "cuaimacrypt"
 version = "1.2.0"
 edition = "2021"
-authors = ["Julian Bolivar <jbolivarg@bolivartech.com>"]
+authors = ["Julian Bolivar <jbolivarg@gmail.com>"]
 description = "CuaimaCrypt symmetric hybrid cipher engine — block cipher and stream cipher combined"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/BolivarTech/CuaimaCrypt"
