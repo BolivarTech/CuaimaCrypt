@@ -176,9 +176,16 @@ impl KaosRand {
 }
 
 impl Drop for KaosRand {
-    /// Securely clears internal state on drop.
+    /// Securely clears all internal state on drop.
+    ///
+    /// Clears the jump counter explicitly. The `attractors` vector and `rnd`
+    /// field are cleared by their own `Drop` implementations when this
+    /// struct is dropped.
     fn drop(&mut self) {
         self.jump = 0;
+        // LorenzAttractor::drop clears each attractor's coordinates and parameters.
+        // MersenneTwisterPlus::drop clears the PRNG state vector and seed.
+        // Both are invoked automatically by Rust's drop glue after this block.
     }
 }
 

@@ -323,6 +323,19 @@ impl Attractor for LorenzAttractor {
     }
 }
 
+impl Drop for LorenzAttractor {
+    /// Securely clears attractor coordinates and parameters on drop.
+    fn drop(&mut self) {
+        self.x = 0.0;
+        self.y = 0.0;
+        self.z = 0.0;
+        self.gamma = 0.0;
+        self.theta = 0.0;
+        self.beta = 0.0;
+        self.delta_t = 0.0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

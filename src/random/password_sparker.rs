@@ -363,6 +363,17 @@ impl Sparker for PasswordSparker {
     }
 }
 
+impl Drop for PasswordSparker {
+    /// Securely clears password-derived spark values on drop.
+    fn drop(&mut self) {
+        for spark in self.sparks.iter_mut() {
+            *spark = 0.0;
+        }
+        self.spark_pos = 0;
+        self.password_ok = -1;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

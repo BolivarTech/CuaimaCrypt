@@ -244,6 +244,20 @@ impl MersenneTwisterPlus {
     }
 }
 
+impl Drop for MersenneTwisterPlus {
+    /// Securely clears the PRNG state vector and seed on drop.
+    fn drop(&mut self) {
+        for item in self.mt.iter_mut() {
+            *item = 0;
+        }
+        self.mti = 0;
+        self.seed = 0;
+        self.fixed_seed = false;
+        self.max_ciclo = 0;
+        self.ciclo = 0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
