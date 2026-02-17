@@ -4,8 +4,6 @@
 //! providing a high-period (2^19937 - 1) pseudorandom number generator with
 //! deterministic output for fixed seeds.
 
-// TODO: Full implementation in Fase 1.4
-
 /// 64-bit Mersenne Twister PRNG with period 2^19937-1.
 ///
 /// When constructed with a fixed seed via [`with_seed`](Self::with_seed),
