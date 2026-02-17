@@ -30,26 +30,59 @@ cuaimacrypt = "1.2"
 
 ### Encrypt and Decrypt
 
+CuaimaCrypt operates on **128-bit blocks** represented as `[i64; 2]`. Each call to
+`codec()` encrypts one block in-place and advances the internal state, so
+encrypting the same plaintext twice produces **different ciphertext** (stream
+cipher property). Encoder and decoder must process blocks in the same sequential
+order.
+
 ```rust
 use cuaimacrypt::CuaimaCrypt;
 
-// Encoder
+// Create separate encoder and decoder with the same password.
+// Both instances derive identical initial state from the password.
 let mut encoder = CuaimaCrypt::new();
 encoder.password("my_secret_password").unwrap();
 
-// Decoder (separate instance, same password)
 let mut decoder = CuaimaCrypt::new();
 decoder.password("my_secret_password").unwrap();
 
+// --- Single-block roundtrip ---
 let original: [i64; 2] = [0x0123456789ABCDEF_u64 as i64,
                            0xFEDCBA9876543210_u64 as i64];
 let mut block = original;
 
-encoder.codec(&mut block);    // encrypt
-assert_ne!(block, original);
+encoder.codec(&mut block);    // encrypt in-place
+assert_ne!(block, original);  // ciphertext differs from plaintext
 
-decoder.decodec(&mut block);  // decrypt
-assert_eq!(block, original);
+decoder.decodec(&mut block);  // decrypt in-place
+assert_eq!(block, original);  // plaintext recovered
+
+// --- Stream cipher property: same plaintext → different ciphertext ---
+let mut block_a = original;
+let mut block_b = original;
+
+encoder.reset();  // rewind encoder state to initial position
+encoder.codec(&mut block_a);  // encrypt block #1
+encoder.codec(&mut block_b);  // encrypt block #2 (same plaintext)
+assert_ne!(block_a, block_b); // ciphertext differs because state evolves
+
+// --- Multi-block sequential encryption ---
+encoder.reset();
+decoder.reset();  // both must reset to stay synchronized
+
+let data: [[i64; 2]; 3] = [[1, 2], [3, 4], [5, 6]];
+let mut encrypted = data;
+
+for blk in encrypted.iter_mut() {
+    encoder.codec(blk);  // each call advances the cipher state
+}
+
+for blk in encrypted.iter_mut() {
+    decoder.decodec(blk);  // decoder tracks the same state sequence
+}
+
+assert_eq!(encrypted, data);  // all blocks recovered
 ```
 
 ### Custom Security Level
