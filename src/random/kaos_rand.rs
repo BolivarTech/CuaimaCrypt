@@ -58,7 +58,13 @@ impl KaosRand {
         }
 
         // Read jump from sparker (modulo LIMIT)
-        let jump = (sparker.get_short_spark() as i32) % LIMIT;
+        // BUG-001 fix: ensure jump >= 1 so attractors always advance deterministically.
+        // When raw_spark % LIMIT == 0 (~4% of passwords), derive jump from the quotient.
+        let raw_spark = sparker.get_short_spark() as i32;
+        let mut jump = raw_spark % LIMIT;
+        if jump <= 0 {
+            jump = (raw_spark / LIMIT) % (LIMIT - 1) + 1;
+        }
 
         // Initialize each attractor with coordinates from sparker
         for attractor in attractors.iter_mut() {
