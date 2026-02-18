@@ -287,4 +287,133 @@ mod tests {
             "Different passwords should produce different output"
         );
     }
+
+    // ── BUG-001 regression tests ──────────────────────────────────────
+
+    /// Verifies that `jump` is always >= 1 after `from_sparker`, even for
+    /// passwords whose first `get_short_spark() % 25 == 0`.
+    /// BUG-001: jump == 0 causes non-deterministic attractor advancement.
+    #[test]
+    fn test_jump_minimum_one_for_zero_spark_passwords() {
+        // These passwords produce get_short_spark() values divisible by 25
+        let bad_passwords = ["SizeSweep_4", "Pow2Sweep_512", "Pow2Sweep_2048"];
+        for password in bad_passwords {
+            let mut sparker = PasswordSparker::new(password);
+            let kaos = KaosRand::from_sparker(&mut sparker);
+            assert!(
+                kaos.jump >= 1,
+                "jump must be >= 1 for password '{}', got {}",
+                password,
+                kaos.jump
+            );
+        }
+    }
+
+    /// Verifies that two KaosRand instances initialized with a zero-jump
+    /// password produce identical `next_double()` sequences.
+    /// BUG-001: system-time-seeded MT causes divergence when jump == 0.
+    ///
+    /// Captures all values from each first instance before creating the
+    /// second, ensuring a time gap that exposes the system-time seed bug.
+    #[test]
+    fn test_deterministic_output_zero_jump_password() {
+        let bad_passwords = ["SizeSweep_4", "Pow2Sweep_512", "Pow2Sweep_2048"];
+
+        // Phase 1: create all first instances and capture their outputs
+        let all_expected: Vec<(&str, Vec<f64>)> = bad_passwords
+            .iter()
+            .map(|&pw| {
+                let mut sparker = PasswordSparker::new(pw);
+                let mut kaos = KaosRand::from_sparker(&mut sparker);
+                let values: Vec<f64> = (0..50).map(|_| kaos.next_double()).collect();
+                (pw, values)
+            })
+            .collect();
+
+        // Phase 2: create second instances and verify (time gap from Phase 1)
+        for (password, expected) in &all_expected {
+            let mut sparker = PasswordSparker::new(password);
+            let mut kaos = KaosRand::from_sparker(&mut sparker);
+
+            for (step, &exp) in expected.iter().enumerate() {
+                assert_eq!(
+                    kaos.next_double(),
+                    exp,
+                    "next_double() diverged at step {} for password '{}'",
+                    step,
+                    password
+                );
+            }
+        }
+    }
+
+    /// Verifies that `next_long()` and `next_int_bounded()` are also
+    /// deterministic for zero-jump passwords.
+    /// BUG-001: all KaosRand output methods depend on the same attractor state.
+    ///
+    /// Captures all values from the first instance, waits 2ms to guarantee
+    /// a different system-time seed, then creates the second instance.
+    #[test]
+    fn test_deterministic_next_long_zero_jump_password() {
+        let bad_passwords = ["SizeSweep_4", "Pow2Sweep_512", "Pow2Sweep_2048"];
+
+        // Phase 1: capture next_long values for all bad passwords
+        let expected_longs: Vec<(&str, Vec<i64>)> = bad_passwords
+            .iter()
+            .map(|&pw| {
+                let mut sparker = PasswordSparker::new(pw);
+                let mut kaos = KaosRand::from_sparker(&mut sparker);
+                let values: Vec<i64> = (0..30).map(|_| kaos.next_long()).collect();
+                (pw, values)
+            })
+            .collect();
+
+        // Guarantee a different system-time millisecond for Phase 2
+        std::thread::sleep(std::time::Duration::from_millis(2));
+
+        // Phase 2: verify second instances produce the same values
+        for (password, expected) in &expected_longs {
+            let mut sparker = PasswordSparker::new(password);
+            let mut kaos = KaosRand::from_sparker(&mut sparker);
+
+            for (step, &exp) in expected.iter().enumerate() {
+                assert_eq!(
+                    kaos.next_long(),
+                    exp,
+                    "next_long() diverged at step {} for password '{}'",
+                    step,
+                    password
+                );
+            }
+        }
+
+        // Phase 3: capture next_int_bounded values
+        let expected_bounded: Vec<(&str, Vec<i32>)> = bad_passwords
+            .iter()
+            .map(|&pw| {
+                let mut sparker = PasswordSparker::new(pw);
+                let mut kaos = KaosRand::from_sparker(&mut sparker);
+                let values: Vec<i32> = (0..30).map(|_| kaos.next_int_bounded(100)).collect();
+                (pw, values)
+            })
+            .collect();
+
+        std::thread::sleep(std::time::Duration::from_millis(2));
+
+        // Phase 4: verify
+        for (password, expected) in &expected_bounded {
+            let mut sparker = PasswordSparker::new(password);
+            let mut kaos = KaosRand::from_sparker(&mut sparker);
+
+            for (step, &exp) in expected.iter().enumerate() {
+                assert_eq!(
+                    kaos.next_int_bounded(100),
+                    exp,
+                    "next_int_bounded(100) diverged at step {} for password '{}'",
+                    step,
+                    password
+                );
+            }
+        }
+    }
 }
