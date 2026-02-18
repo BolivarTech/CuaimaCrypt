@@ -98,8 +98,7 @@ impl KaosRand {
     /// Finally masks to 53 bits and normalizes to [0, 1).
     pub fn next_double(&mut self) -> f64 {
         let k = 3; // 3 coordinates per attractor
-        let total_coords = k * self.attractors.len();
-        let mut coordenada = vec![0.0f64; total_coords];
+        let mut coordenada = [0.0f64; NUM_ATTRACTORS * 3];
 
         // Advance attractors and collect coordinates
         for i in 0..self.attractors.len() {

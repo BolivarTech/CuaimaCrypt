@@ -206,35 +206,12 @@ impl CuaimaCrypt {
             self.set_downchain(j, target_id);
         }
 
-        // Set PosUp for all ShiftCodecs
-        for j in 0..system_num_seed {
-            let k = kaos.next_int_bounded(32);
-            self.set_pos_up(j, k);
-        }
-
-        // Set PosDown for all ShiftCodecs
-        for j in 0..system_num_seed {
-            let k = kaos.next_int_bounded(32);
-            self.set_pos_down(j, k);
-        }
-
-        // Set WinA for all ShiftCodecs
-        for j in 0..system_num_seed {
-            let k = kaos.next_int_bounded(32);
-            self.set_win_a(j, k);
-        }
-
-        // Set WinB for all ShiftCodecs
-        for j in 0..system_num_seed {
-            let k = kaos.next_int_bounded(32);
-            self.set_win_b(j, k);
-        }
-
-        // Set ShiftLeap for all ShiftCodecs (max 15)
-        for j in 0..system_num_seed {
-            let k = kaos.next_int_bounded(15);
-            self.set_shift_leap(j, k);
-        }
+        // Set ShiftCodec parameters (PosUp, PosDown, WinA, WinB, ShiftLeap)
+        self.init_shift_codec_params(&mut kaos, system_num_seed, 32, Self::set_pos_up);
+        self.init_shift_codec_params(&mut kaos, system_num_seed, 32, Self::set_pos_down);
+        self.init_shift_codec_params(&mut kaos, system_num_seed, 32, Self::set_win_a);
+        self.init_shift_codec_params(&mut kaos, system_num_seed, 32, Self::set_win_b);
+        self.init_shift_codec_params(&mut kaos, system_num_seed, 15, Self::set_shift_leap);
 
         // Calculate Walsh code (1..127, never 0)
         self.walsh_code = kaos.next_int_bounded(128) as usize;
@@ -455,6 +432,26 @@ impl CuaimaCrypt {
         self.arena.set_shift_leap(id, leap);
     }
 
+    /// Initializes a ShiftCodec parameter for all codecs using KaosRand.
+    ///
+    /// # Parameters
+    /// - `kaos`: The KAOSrand PRNG for generating values.
+    /// - `count`: Number of ShiftCodecs to initialize.
+    /// - `bound`: Exclusive upper bound for `next_int_bounded`.
+    /// - `setter`: The setter method to call for each ShiftCodec.
+    fn init_shift_codec_params(
+        &mut self,
+        kaos: &mut KaosRand,
+        count: usize,
+        bound: i32,
+        setter: fn(&mut Self, usize, i32),
+    ) {
+        for j in 0..count {
+            let k = kaos.next_int_bounded(bound);
+            setter(self, j, k);
+        }
+    }
+
     // ──────── SeedHop ────────
 
     /// Permutes ShiftCodec states according to the seed hopping sequence.
@@ -531,105 +528,65 @@ impl CuaimaCrypt {
         }
     }
 
+    /// Splits an i64 into its high and low 32-bit halves.
+    ///
+    /// Returns `(high_32, low_32)` where each half is stored in the low 32 bits
+    /// of an i64, zero-extended.
+    fn split_halves(val: i64) -> (i64, i64) {
+        let high = ((val as u64) >> 32) as i64;
+        let low = (((val << 32) as u64) >> 32) as i64;
+        (high, low)
+    }
+
+    /// Joins high and low 32-bit halves into an i64.
+    ///
+    /// Each half is expected in the low 32 bits of its i64 argument.
+    fn join_halves(high: i64, low: i64) -> i64 {
+        (high << 32) | (((low << 32) as u64 >> 32) as i64)
+    }
+
     /// Crosses the inner 32-bit halves between block[0] and block[1].
     ///
-    /// block[0] = (high32(block[0]) | low32(block[1]))
-    /// block[1] = (low32(block[0]) | high32(block[1]))  -- shifted
+    /// block[0] = high32(A) : high32(B)
+    /// block[1] = low32(A) : low32(B)
     fn inner_cross_byte(block: &mut [i64; 2]) {
-        let a1 = block[0];
-        let b1 = block[1];
-        let a2 = block[0];
-        let b2 = block[1];
-
-        // a1 = a1 << 32  (keep high 32 bits of original, shifted to high)
-        let a1 = a1 << 32;
-        // a2 = (a2 >>> 32) << 32  (high 32 bits of original, kept in high position)
-        let a2 = ((a2 as u64) >> 32) as i64;
-        let a2 = a2 << 32;
-        // b1 = (b1 << 32) >>> 32  (low 32 bits of original b1... wait)
-        // Actually: b1 << 32 clears high, then >>> 32 puts it low
-        let b1 = b1 << 32;
-        let b1 = ((b1 as u64) >> 32) as i64;
-        // b2 = b2 >>> 32
-        let b2 = ((b2 as u64) >> 32) as i64;
-        // a2 = a2 | b2
-        let a2 = a2 | b2;
-        // b1 = b1 | a1
-        let b1 = b1 | a1;
-        block[0] = a2;
-        block[1] = b1;
+        let (a_hi, a_lo) = Self::split_halves(block[0]);
+        let (b_hi, b_lo) = Self::split_halves(block[1]);
+        block[0] = Self::join_halves(a_hi, b_hi);
+        block[1] = Self::join_halves(a_lo, b_lo);
     }
 
     /// Crosses the outer 32-bit halves between block[0] and block[1].
+    ///
+    /// block[0] = low32(B) : low32(A)
+    /// block[1] = high32(B) : high32(A)
     fn outneer_cross_byte(block: &mut [i64; 2]) {
-        let a1 = block[0];
-        let b1 = block[1];
-        let a2 = block[0];
-        let b2 = block[1];
-
-        // a1 = (a1 << 32) >>> 32  (low 32 bits)
-        let a1 = a1 << 32;
-        let a1 = ((a1 as u64) >> 32) as i64;
-        // a2 = a2 >>> 32  (high 32 bits moved to low)
-        let a2 = ((a2 as u64) >> 32) as i64;
-        // b1 = b1 << 32  (low 32 bits moved to high)
-        let b1 = b1 << 32;
-        // b2 = (b2 >>> 32) << 32  (high 32 bits kept in high)
-        let b2 = ((b2 as u64) >> 32) as i64;
-        let b2 = b2 << 32;
-        // a1 = a1 | b1
-        let a1 = a1 | b1;
-        // b2 = b2 | a2
-        let b2 = b2 | a2;
-        block[0] = a1;
-        block[1] = b2;
+        let (a_hi, a_lo) = Self::split_halves(block[0]);
+        let (b_hi, b_lo) = Self::split_halves(block[1]);
+        block[0] = Self::join_halves(b_lo, a_lo);
+        block[1] = Self::join_halves(b_hi, a_hi);
     }
 
-    /// Swaps most-significant and least-significant 32-bit halves within each word.
+    /// Swaps high and low 32-bit halves within each word.
+    ///
+    /// block[0] = low32(A) : high32(A)
+    /// block[1] = low32(B) : high32(B)
     fn inter_cross_byte(block: &mut [i64; 2]) {
-        let a1 = block[0];
-        let b1 = block[1];
-        let a2 = block[0];
-        let b2 = block[1];
-
-        // a1 = a1 << 32  (low moved to high)
-        let a1 = a1 << 32;
-        // a2 = a2 >>> 32  (high moved to low)
-        let a2 = ((a2 as u64) >> 32) as i64;
-        // b1 = b1 << 32
-        let b1 = b1 << 32;
-        // b2 = b2 >>> 32
-        let b2 = ((b2 as u64) >> 32) as i64;
-        // a1 = a1 | a2
-        let a1 = a1 | a2;
-        // b1 = b1 | b2
-        let b1 = b1 | b2;
-        block[0] = a1;
-        block[1] = b1;
+        let (a_hi, a_lo) = Self::split_halves(block[0]);
+        let (b_hi, b_lo) = Self::split_halves(block[1]);
+        block[0] = Self::join_halves(a_lo, a_hi);
+        block[1] = Self::join_halves(b_lo, b_hi);
     }
 
     /// Swaps 32-bit halves within each word and then swaps the two words.
+    ///
+    /// block[0] = low32(B) : high32(B)
+    /// block[1] = low32(A) : high32(A)
     fn swap_byte(block: &mut [i64; 2]) {
-        let a1 = block[0];
-        let b1 = block[1];
-        let a2 = block[0];
-        let b2 = block[1];
-
-        // a1 = a1 << 32
-        let a1 = a1 << 32;
-        // a2 = a2 >>> 32
-        let a2 = ((a2 as u64) >> 32) as i64;
-        // b1 = b1 << 32
-        let b1 = b1 << 32;
-        // b2 = b2 >>> 32
-        let b2 = ((b2 as u64) >> 32) as i64;
-        // a1 = a1 | a2
-        let a1 = a1 | a2;
-        // b1 = b1 | b2
-        let b1 = b1 | b2;
-        // SWAP: entrada[1] = a1, entrada[0] = b1
-        block[1] = a1;
-        block[0] = b1;
+        let (a_hi, a_lo) = Self::split_halves(block[0]);
+        let (b_hi, b_lo) = Self::split_halves(block[1]);
+        block[0] = Self::join_halves(b_lo, b_hi);
+        block[1] = Self::join_halves(a_lo, a_hi);
     }
 
     // ──────── Bit manipulation helpers ────────
@@ -798,12 +755,8 @@ impl CuaimaCrypt {
 impl Drop for CuaimaCrypt {
     /// Securely clears sensitive internal state on drop.
     fn drop(&mut self) {
-        for item in self.seed_hopping_seq.iter_mut() {
-            *item = 0;
-        }
-        for item in self.cross_bits_sequence.iter_mut() {
-            *item = 0;
-        }
+        self.seed_hopping_seq.fill(0);
+        self.cross_bits_sequence.fill(0);
         self.walsh_code = 0;
         // ShiftCodecArena::drop handles codec zeroing
     }
@@ -812,6 +765,19 @@ impl Drop for CuaimaCrypt {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Known-bad passwords that produce `get_short_spark() % 25 == 0`,
+    /// triggering BUG-001.
+    const BAD_PASSWORDS: [&str; 3] = ["SizeSweep_4", "Pow2Sweep_512", "Pow2Sweep_2048"];
+
+    /// Plaintext vectors used across multiple BUG-001 regression tests.
+    const PLAINTEXTS: [[i64; 2]; 5] = [
+        [0x0102030405060708, 0x090A0B0C0D0E0F10],
+        [0, 0],
+        [-1, -1],
+        [i64::MAX, i64::MIN],
+        [42, 84],
+    ];
 
     #[test]
     fn test_default_construction() {
@@ -1078,5 +1044,171 @@ mod tests {
             decoder.decodec(&mut block);
             assert_eq!(block, original, "Roundtrip failed for {} rakes", num);
         }
+    }
+
+    // ── BUG-001 regression tests (migrated from tests/bug001_regression.rs) ──
+
+    /// Verifies codec/decodec roundtrip for each known-bad password across
+    /// multiple plaintext values.
+    ///
+    /// BUG-001: encoder and decoder diverge because KaosRand's internal
+    /// MersenneTwister is seeded with system time when jump == 0.
+    #[test]
+    fn bug001_roundtrip_known_bad_passwords() {
+        for password in BAD_PASSWORDS {
+            for (i, &plaintext) in PLAINTEXTS.iter().enumerate() {
+                let mut encoder = CuaimaCrypt::new();
+                encoder.password(password).unwrap();
+                let mut block = plaintext;
+                encoder.codec(&mut block);
+
+                let mut decoder = CuaimaCrypt::new();
+                decoder.password(password).unwrap();
+                decoder.decodec(&mut block);
+
+                assert_eq!(
+                    block, plaintext,
+                    "Roundtrip failed for password '{}', plaintext[{}]",
+                    password, i
+                );
+            }
+        }
+    }
+
+    /// Verifies that two independent encoder instances initialized with the
+    /// same bad password produce identical ciphertext.
+    ///
+    /// BUG-001: each instance seeds MersenneTwister with a different system
+    /// time, causing completely different cipher states.
+    #[test]
+    fn bug001_deterministic_ciphertext_known_bad_passwords() {
+        for password in BAD_PASSWORDS {
+            let plaintext: [i64; 2] = [0x0102030405060708, 0x090A0B0C0D0E0F10];
+
+            let mut enc1 = CuaimaCrypt::new();
+            enc1.password(password).unwrap();
+            let mut block1 = plaintext;
+            enc1.codec(&mut block1);
+
+            let mut enc2 = CuaimaCrypt::new();
+            enc2.password(password).unwrap();
+            let mut block2 = plaintext;
+            enc2.codec(&mut block2);
+
+            assert_eq!(
+                block1, block2,
+                "Ciphertext diverged for password '{}'",
+                password
+            );
+        }
+    }
+
+    /// Verifies that multiple consecutive blocks round-trip correctly with
+    /// bad passwords. SeedHopping permutes state after each block, so if
+    /// the first block is wrong, all subsequent blocks are also wrong.
+    #[test]
+    fn bug001_multi_block_sequential_roundtrip() {
+        for password in BAD_PASSWORDS {
+            let mut encoder = CuaimaCrypt::new();
+            encoder.password(password).unwrap();
+
+            let mut decoder = CuaimaCrypt::new();
+            decoder.password(password).unwrap();
+
+            for block_idx in 0..10u64 {
+                let plaintext: [i64; 2] = [block_idx as i64, !(block_idx as i64)];
+                let mut block = plaintext;
+                encoder.codec(&mut block);
+                decoder.decodec(&mut block);
+                assert_eq!(
+                    block, plaintext,
+                    "Multi-block roundtrip failed for password '{}', block {}",
+                    password, block_idx
+                );
+            }
+        }
+    }
+
+    /// Verifies roundtrip for bad passwords with various rake counts.
+    ///
+    /// The bug is in KaosRand initialization (shared across all rake counts),
+    /// so any rake count that uses `KaosRand::from_sparker` is affected.
+    #[test]
+    fn bug001_bad_passwords_with_custom_rake_counts() {
+        let rake_counts = [2, 5, 16];
+        for password in BAD_PASSWORDS {
+            for &rakes in &rake_counts {
+                let mut encoder = CuaimaCrypt::with_num_rakes(rakes).unwrap();
+                encoder.password(password).unwrap();
+
+                let mut decoder = CuaimaCrypt::with_num_rakes(rakes).unwrap();
+                decoder.password(password).unwrap();
+
+                let plaintext: [i64; 2] = [0x0102030405060708, 0x090A0B0C0D0E0F10];
+                let mut block = plaintext;
+                encoder.codec(&mut block);
+                decoder.decodec(&mut block);
+
+                assert_eq!(
+                    block, plaintext,
+                    "Roundtrip failed for password '{}', rakes={}",
+                    password, rakes
+                );
+            }
+        }
+    }
+
+    /// Fuzzes 1000 passwords and verifies 0% roundtrip failure rate.
+    ///
+    /// Before the fix, approximately 4% (~40 out of 1000) fail silently.
+    /// After the fix, all must pass.
+    #[test]
+    fn bug001_roundtrip_zero_failure_rate_fuzz() {
+        let plaintext: [i64; 2] = [0x0102030405060708, 0x090A0B0C0D0E0F10];
+
+        // Build password set: known bad + diverse formats
+        let mut passwords: Vec<String> = Vec::with_capacity(1050);
+        passwords.extend(BAD_PASSWORDS.iter().map(|s| s.to_string()));
+        for i in 0..500 {
+            passwords.push(format!("TestPassword_{}", i));
+        }
+        for i in 0..500 {
+            passwords.push(format!("Pwd{}_check", i));
+        }
+        let num_passwords = passwords.len();
+
+        // Phase 1: encode all blocks
+        let ciphertexts: Vec<[i64; 2]> = passwords
+            .iter()
+            .map(|pw| {
+                let mut encoder = CuaimaCrypt::new();
+                encoder.password(pw).unwrap();
+                let mut block = plaintext;
+                encoder.codec(&mut block);
+                block
+            })
+            .collect();
+
+        // Phase 2: decode all blocks (time gap from Phase 1)
+        let mut failures = Vec::new();
+        for (i, pw) in passwords.iter().enumerate() {
+            let mut decoder = CuaimaCrypt::new();
+            decoder.password(pw).unwrap();
+            let mut block = ciphertexts[i];
+            decoder.decodec(&mut block);
+
+            if block != plaintext {
+                failures.push(pw.clone());
+            }
+        }
+
+        assert!(
+            failures.is_empty(),
+            "Roundtrip failed for {} out of {} passwords ({:.1}%): {:?}",
+            failures.len(),
+            num_passwords,
+            failures.len() as f64 / num_passwords as f64 * 100.0,
+            &failures[..failures.len().min(10)]
+        );
     }
 }

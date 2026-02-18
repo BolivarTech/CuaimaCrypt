@@ -145,13 +145,41 @@ impl ShiftCodecArena {
         codec.salida
     }
 
-    /// Advances the shift register for encoding (uses `entrada` as feedback).
+    /// Shared shift register advancement logic for encoding and decoding.
     ///
-    /// Replicates Java's `ShiftCdec()`:
+    /// Replicates Java's `ShiftCdec()`/`ShiftDcdec()`:
     /// 1. XOR window bits from self and chains.
-    /// 2. XOR with `entrada` (input data) for data-dependent feedback.
+    /// 2. XOR with `feedback` (entrada for encoding, salida for decoding).
     /// 3. Shift register right by `shift_leap` bits.
     /// 4. XOR new bits into position 31.
+    ///
+    /// # Parameters
+    /// - `id`: The ShiftCodec to advance.
+    /// - `feedback`: The feedback value (`entrada` for encoding, `salida` for decoding).
+    ///
+    /// # Panics
+    /// Panics if upchain or downchain is not set.
+    fn shift_common(&mut self, id: ShiftCodecId, feedback: i32) {
+        let codec = &self.codecs[id.0];
+        let win_a = codec.win_a;
+        let win_b = codec.win_b;
+        let pos_up = codec.pos_up;
+        let pos_down = codec.pos_down;
+        let shift_leap = codec.shift_leap;
+        let upchain = codec.upchain.expect("upchain not set");
+        let downchain = codec.downchain.expect("downchain not set");
+
+        let mut a = self.get_bits(id, win_a) ^ self.get_bits(upchain, pos_up);
+        let b = self.get_bits(id, win_b) ^ self.get_bits(downchain, pos_down);
+        a ^= b;
+        let b = a ^ feedback;
+        let sr = (b as i64) << 31;
+        let codec = &mut self.codecs[id.0];
+        codec.shift_register = ((codec.shift_register as u64) >> (shift_leap as u32)) as i64;
+        codec.shift_register ^= sr;
+    }
+
+    /// Advances the shift register for encoding (uses `entrada` as feedback).
     ///
     /// # Parameters
     /// - `id`: The ShiftCodec to advance.
@@ -159,38 +187,11 @@ impl ShiftCodecArena {
     /// # Panics
     /// Panics if upchain or downchain is not set.
     pub(crate) fn shift_cdec(&mut self, id: ShiftCodecId) {
-        let codec = &self.codecs[id.0];
-        let win_a = codec.win_a;
-        let win_b = codec.win_b;
-        let pos_up = codec.pos_up;
-        let pos_down = codec.pos_down;
-        let entrada = codec.entrada;
-        let shift_leap = codec.shift_leap;
-        let upchain = codec.upchain.expect("upchain not set");
-        let downchain = codec.downchain.expect("downchain not set");
-
-        // a = self.GetBits(win_a) ^ upchain.GetBits(posup)
-        let mut a = self.get_bits(id, win_a) ^ self.get_bits(upchain, pos_up);
-        // b = self.GetBits(win_b) ^ downchain.GetBits(posdown)
-        let b = self.get_bits(id, win_b) ^ self.get_bits(downchain, pos_down);
-        // a = a ^ b
-        a ^= b;
-        // b = a ^ entrada
-        let b = a ^ entrada;
-        // SR = (long) b; SR = SR << 31
-        let sr = (b as i64) << 31;
-        // shift_register = shift_register >>> ShiftLeap
-        let codec = &mut self.codecs[id.0];
-        codec.shift_register = ((codec.shift_register as u64) >> (shift_leap as u32)) as i64;
-        // shift_register = SR ^ shift_register
-        codec.shift_register ^= sr;
+        let feedback = self.codecs[id.0].entrada;
+        self.shift_common(id, feedback);
     }
 
     /// Advances the shift register for decoding (uses `salida` as feedback).
-    ///
-    /// Identical to [`shift_cdec`](Self::shift_cdec) except uses `salida`
-    /// instead of `entrada` for the feedback term. This maintains symmetry
-    /// between encoding and decoding.
     ///
     /// # Parameters
     /// - `id`: The ShiftCodec to advance.
@@ -198,24 +199,8 @@ impl ShiftCodecArena {
     /// # Panics
     /// Panics if upchain or downchain is not set.
     pub(crate) fn shift_dcdec(&mut self, id: ShiftCodecId) {
-        let codec = &self.codecs[id.0];
-        let win_a = codec.win_a;
-        let win_b = codec.win_b;
-        let pos_up = codec.pos_up;
-        let pos_down = codec.pos_down;
-        let salida = codec.salida;
-        let shift_leap = codec.shift_leap;
-        let upchain = codec.upchain.expect("upchain not set");
-        let downchain = codec.downchain.expect("downchain not set");
-
-        let mut a = self.get_bits(id, win_a) ^ self.get_bits(upchain, pos_up);
-        let b = self.get_bits(id, win_b) ^ self.get_bits(downchain, pos_down);
-        a ^= b;
-        let b = a ^ salida;
-        let sr = (b as i64) << 31;
-        let codec = &mut self.codecs[id.0];
-        codec.shift_register = ((codec.shift_register as u64) >> (shift_leap as u32)) as i64;
-        codec.shift_register ^= sr;
+        let feedback = self.codecs[id.0].salida;
+        self.shift_common(id, feedback);
     }
 
     // --- Getters and Setters ---

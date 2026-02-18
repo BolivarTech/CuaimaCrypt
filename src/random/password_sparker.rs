@@ -587,4 +587,31 @@ mod tests {
             let _ = sparker.get_byte_spark();
         }
     }
+
+    // ── BUG-001 regression test (migrated from tests/bug001_regression.rs) ──
+
+    /// Known-bad passwords that produce `get_short_spark() % 25 == 0`,
+    /// triggering BUG-001.
+    const BAD_PASSWORDS: [&str; 3] = ["SizeSweep_4", "Pow2Sweep_512", "Pow2Sweep_2048"];
+
+    /// Confirms the BUG-001 root cause: all known-bad passwords produce a
+    /// `get_short_spark()` value where `value % 25 == 0`.
+    ///
+    /// This test documents the diagnosis and will continue to PASS both
+    /// before and after the fix (the sparker output is unchanged).
+    #[test]
+    fn bug001_confirm_root_cause_short_spark_divisible_by_25() {
+        for password in BAD_PASSWORDS {
+            let mut sparker = PasswordSparker::new(password);
+            let short_val = sparker.get_short_spark();
+            assert_eq!(
+                (short_val as i32) % 25,
+                0,
+                "Expected short_spark % 25 == 0 for '{}', got short_spark={} (% 25 = {})",
+                password,
+                short_val,
+                (short_val as i32) % 25
+            );
+        }
+    }
 }

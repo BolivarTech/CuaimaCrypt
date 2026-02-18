@@ -69,16 +69,22 @@ impl RakeCodec {
         RAKE_TEETHS
     }
 
-    /// Encodes a 128-bit block (two `i64` values) in place.
+    /// Processes a 128-bit block using the given encoding/decoding function.
     ///
     /// Each `i64` is split into two 32-bit halves. The low 32 bits are
-    /// encoded by `rake[2*j]` and the high 32 bits by `rake[2*j+1]`,
+    /// processed by `rake[2*j]` and the high 32 bits by `rake[2*j+1]`,
     /// then reassembled.
     ///
     /// # Parameters
     /// - `arena`: The ShiftCodec arena.
-    /// - `block`: The 128-bit block to encode (modified in place).
-    pub(crate) fn codec(&self, arena: &mut ShiftCodecArena, block: &mut [i64; 2]) {
+    /// - `block`: The 128-bit block to process (modified in place).
+    /// - `encode_fn`: The arena method to apply (`bits_codec` or `bits_decodec`).
+    fn process_block(
+        &self,
+        arena: &mut ShiftCodecArena,
+        block: &mut [i64; 2],
+        encode_fn: fn(&mut ShiftCodecArena, ShiftCodecId, i32) -> i32,
+    ) {
         // Hardcoded raketeeths=2, numentradas=2 (matching Java for performance)
         let raketeeths = 2;
         let numentradas = 2;
@@ -88,8 +94,8 @@ impl RakeCodec {
             for i in 0..raketeeths {
                 // Extract 32-bit portion: (entrada[j] >>> i*32) truncated to i32
                 let bit_ent = (((*block_item) as u64) >> (i * 32)) as i32;
-                // Encode with the corresponding ShiftCodec
-                let bit_sal = arena.bits_codec(self.rake[raketeeths * j + i], bit_ent) as i64;
+                // Encode/decode with the corresponding ShiftCodec
+                let bit_sal = encode_fn(arena, self.rake[raketeeths * j + i], bit_ent) as i64;
                 // Reassemble: shift encoded value to position, clear high bits of salida, OR
                 let bit_sal_shifted = bit_sal << (i * 32);
                 salida = ((salida as u64) << (i * 32)) as i64;
@@ -98,6 +104,15 @@ impl RakeCodec {
             }
             *block_item = salida;
         }
+    }
+
+    /// Encodes a 128-bit block (two `i64` values) in place.
+    ///
+    /// # Parameters
+    /// - `arena`: The ShiftCodec arena.
+    /// - `block`: The 128-bit block to encode (modified in place).
+    pub(crate) fn codec(&self, arena: &mut ShiftCodecArena, block: &mut [i64; 2]) {
+        self.process_block(arena, block, ShiftCodecArena::bits_codec);
     }
 
     /// Decodes a 128-bit block (two `i64` values) in place.
@@ -109,21 +124,7 @@ impl RakeCodec {
     /// - `arena`: The ShiftCodec arena.
     /// - `block`: The 128-bit block to decode (modified in place).
     pub(crate) fn decodec(&self, arena: &mut ShiftCodecArena, block: &mut [i64; 2]) {
-        let raketeeths = 2;
-        let numentradas = 2;
-
-        for (j, block_item) in block.iter_mut().enumerate().take(numentradas) {
-            let mut salida: i64 = 0;
-            for i in 0..raketeeths {
-                let bit_ent = (((*block_item) as u64) >> (i * 32)) as i32;
-                let bit_sal = arena.bits_decodec(self.rake[raketeeths * j + i], bit_ent) as i64;
-                let bit_sal_shifted = bit_sal << (i * 32);
-                salida = ((salida as u64) << (i * 32)) as i64;
-                salida = ((salida as u64) >> (i * 32)) as i64;
-                salida |= bit_sal_shifted;
-            }
-            *block_item = salida;
-        }
+        self.process_block(arena, block, ShiftCodecArena::bits_decodec);
     }
 
     /// Advances all 4 ShiftCodecs for encoding.
